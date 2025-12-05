@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Nota Gaji & Pengeluaran</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<nav>
+    <button onclick="showPage('gaji')">Menu Gaji</button>
+    <button onclick="showPage('pengeluaran')">Menu Pengeluaran</button>
+</nav>
+
+<!-- ------------------- HALAMAN GAJI ------------------- -->
+<section id="gaji" class="page glass">
+    <h2>Catatan Gaji Mingguan</h2>
+
+    <div class="form">
+        <input id="gajiNama" placeholder="Nama Tukang">
+        <input id="gajiJumlah" type="number" placeholder="Jumlah Gaji">
+        <button onclick="tambahGaji()">Tambah</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nama</th>
+                <th>Jumlah</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="gajiTable"></tbody>
+    </table>
+</section>
+
+<!-- ---------------- HALAMAN PENGELUARAN ---------------- -->
+<section id="pengeluaran" class="page glass" style="display:none">
+
+    <h2>Catatan Pengeluaran</h2>
+
+    <div class="form">
+        <input type="date" id="pengTanggal">
+        <input type="text" id="pengNama" placeholder="Nama Barang">
+        <input type="number" id="pengQty" placeholder="Banyaknya">
+        <input type="number" id="pengHarga" placeholder="Harga">
+        <button onclick="tambahPengeluaran()">Tambah</button>
+    </div>
+
+    <div id="pengeluaranWrapper"></div>
+
+    <h2 class="grandTotal">Grand Total Semua Tanggal: <span id="grandTotalRp">0</span></h2>
+
+    <button class="pdfBtn" onclick="exportSemuaPDF()">Download Semua PDF</button>
+</section>
+
+<script type="module" src="script.js"></script>
+
+</body>
+</html>

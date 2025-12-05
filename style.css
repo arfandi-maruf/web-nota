@@ -1,0 +1,96 @@
+body {
+    margin: 0;
+    padding: 20px;
+    background: linear-gradient(120deg,#3a7bd5,#00d2ff);
+    font-family: Poppins, sans-serif;
+    color: #fff;
+}
+
+nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+nav button {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    color: #fff;
+    cursor: pointer;
+    transition: .2s;
+}
+
+nav button:hover {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.page.glass {
+    background: rgba(255,255,255,0.15);
+    padding: 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.form input {
+    padding: 10px;
+    border-radius: 10px;
+    border: none;
+    outline: none;
+}
+
+button {
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: collapse;
+    background: rgba(255,255,255,0.2);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+th, td {
+    padding: 10px;
+}
+
+tr:nth-child(even) {
+    background: rgba(255,255,255,0.1);
+}
+
+.card {
+    background: rgba(255,255,255,0.18);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.grandTotal {
+    margin-top: 20px;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+}
+
+.pdfBtn {
+    margin-top: 15px;
+    background: #ffeb3b;
+    color: #000;
+    font-weight: bold;
+}
