@@ -3,60 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aplikasi Nota Gaji & Pengeluaran</title>
+    <title>Sistem Input Data Pengiriman</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
+    <div class="container">
+        <header class="app-header">
+            <h2>Data Pengiriman</h2>
+            <p>Input dan kelola data pengiriman barang dengan perhitungan otomatis</p>
+        </header>
 
-<nav>
-    <button onclick="showPage('gaji')">Menu Gaji</button>
-    <button onclick="showPage('pengeluaran')">Menu Pengeluaran</button>
-</nav>
+        <!-- Form Input Data Baru -->
+        <section class="form-card">
+            <h3>+ Tambah Data Baru</h3>
+            <form id="entryForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="tanggal">Tanggal</label>
+                        <input type="text" id="tanggal" placeholder="Contoh: Jumat,24/07/26" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="supir">Supir</label>
+                        <input type="text" id="supir" placeholder="Nama Supir" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mobil">Mobil</label>
+                        <input type="text" id="mobil" placeholder="No. Polisi / Jenis" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="drum">Jumlah Drum</label>
+                        <input type="number" id="drum" placeholder="0" min="0" step="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="harga">Harga per Drum (Rp)</label>
+                        <input type="number" id="harga" placeholder="0" min="0" step="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="totalPreview">Total Estimasi</label>
+                        <input type="text" id="totalPreview" placeholder="Rp 0" readonly class="input-readonly">
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Tambah ke Tabel</button>
+                    <button type="reset" class="btn btn-secondary">Reset Form</button>
+                </div>
+            </form>
+        </section>
 
-<!-- ------------------- HALAMAN GAJI ------------------- -->
-<section id="gaji" class="page glass">
-    <h2>Catatan Gaji Mingguan</h2>
-
-    <div class="form">
-        <input id="gajiNama" placeholder="Nama Tukang">
-        <input id="gajiJumlah" type="number" placeholder="Jumlah Gaji">
-        <button onclick="tambahGaji()">Tambah</button>
+        <!-- Tabel Rekapitulasi Data -->
+        <section class="table-card">
+            <div class="table-header-bar">
+                <h3>Tabel Rekapitulasi Data</h3>
+                <span class="badge" id="rowCount">1 Data</span>
+            </div>
+            <div class="table-responsive">
+                <table id="dataTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Tanggal</th>
+                            <th style="width: 20%;">Supir</th>
+                            <th style="width: 18%;">Mobil</th>
+                            <th style="width: 12%;">Drum</th>
+                            <th style="width: 15%;">Harga</th>
+                            <th style="width: 15%;">Total</th>
+                            <th style="width: 80px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Baris awal seperti di screenshot -->
+                        <tr>
+                            <td><input type="text" class="cell-input" value="Jumat,24/07/26" onchange="calculateGrandTotal()"></td>
+                            <td><input type="text" class="cell-input" value="" placeholder="Supir" onchange="calculateGrandTotal()"></td>
+                            <td><input type="text" class="cell-input" value="" placeholder="Mobil" onchange="calculateGrandTotal()"></td>
+                            <td><input type="number" class="cell-input cell-number cell-drum" value="" placeholder="0" oninput="updateRowTotal(this)"></td>
+                            <td><input type="number" class="cell-input cell-number cell-harga" value="" placeholder="0" oninput="updateRowTotal(this)"></td>
+                            <td class="cell-total">Rp 0</td>
+                            <td class="cell-action"><button class="btn-delete" onclick="deleteRow(this)">✕</button></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="summary-row">
+                            <td colspan="3" class="text-center"><strong>TOTAL REKAPITULASI</strong></td>
+                            <td id="grandTotalDrum" class="text-right"><strong>0</strong></td>
+                            <td class="text-right">-</td>
+                            <td id="grandTotalHarga" class="text-right"><strong>Rp 0</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="table-actions">
+                <button class="btn btn-outline" onclick="addNewRow()">+ Tambah Baris Kosong</button>
+            </div>
+        </section>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Nama</th>
-                <th>Jumlah</th>
-                <th>Aksi</th>
-            </tr>
-        </thead>
-        <tbody id="gajiTable"></tbody>
-    </table>
-</section>
-
-<!-- ---------------- HALAMAN PENGELUARAN ---------------- -->
-<section id="pengeluaran" class="page glass" style="display:none">
-
-    <h2>Catatan Pengeluaran</h2>
-
-    <div class="form">
-        <input type="date" id="pengTanggal">
-        <input type="text" id="pengNama" placeholder="Nama Barang">
-        <input type="number" id="pengQty" placeholder="Banyaknya">
-        <input type="number" id="pengHarga" placeholder="Harga">
-        <button onclick="tambahPengeluaran()">Tambah</button>
-    </div>
-
-    <div id="pengeluaranWrapper"></div>
-
-    <h2 class="grandTotal">Grand Total Semua Tanggal: <span id="grandTotalRp">0</span></h2>
-
-    <button class="pdfBtn" onclick="exportSemuaPDF()">Download Semua PDF</button>
-</section>
-
-<script type="module" src="script.js"></script>
-
+    <script src="script.js"></script>
 </body>
 </html>
