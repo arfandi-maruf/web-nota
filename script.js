@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hargaInput.addEventListener('input', calculatePreview);
     }
 
-    // Ambil data dari Google Sheets
+    // Ambil data awal dari Google Sheets
     loadDataFromGoogleSheets();
 });
 
@@ -67,7 +67,11 @@ if (entryForm) {
             document.getElementById('totalPreview').value = 'Rp 0';
             submitBtn.disabled = false;
             submitBtn.textContent = 'Tambah ke Tabel';
-            loadDataFromGoogleSheets();
+
+            // Beri jeda 1,5 detik sebelum reload tabel agar Google Sheets selesai menulis data
+            setTimeout(() => {
+                loadDataFromGoogleSheets();
+            }, 1500);
         })
         .catch(error => {
             console.error('Error:', error);
@@ -83,10 +87,13 @@ function loadDataFromGoogleSheets() {
     const tableBody = document.getElementById('tableBody');
     if (!tableBody) return;
 
-    tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Memuat data dari Google Sheets...</td></tr>';
-
     fetch(SCRIPT_URL)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Jaringan bermasalah');
+            }
+            return response.json();
+        })
         .then(data => {
             tableBody.innerHTML = '';
             
@@ -113,8 +120,11 @@ function loadDataFromGoogleSheets() {
             calculateGrandTotal();
         })
         .catch(err => {
-            console.error(err);
-            tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Gagal memuat data dari server.</td></tr>';
+            console.error('Gagal memuat data:', err);
+            // Jangan menimpa isi tabel jika sebelumnya sudah ada data
+            if (tableBody.children.length === 0 || tableBody.innerHTML.includes('Memuat data')) {
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="color: red;">Gagal memuat data dari server. Silakan refresh halaman.</td></tr>';
+            }
         });
 }
 
@@ -133,6 +143,11 @@ function updateRowTotal(element) {
 function addNewRow() {
     const tableBody = document.getElementById('tableBody');
     if (!tableBody) return;
+
+    // Hilangkan pesan kosong/loading jika ada
+    if (tableBody.innerHTML.includes('Belum ada data') || tableBody.innerHTML.includes('Gagal memuat')) {
+        tableBody.innerHTML = '';
+    }
 
     const newRow = document.createElement('tr');
     newRow.innerHTML = `
@@ -183,38 +198,32 @@ function calculateGrandTotal() {
     if (countElem) countElem.textContent = `${rows.length} Data`;
 }
 
-// FUNGSI PERBAIKAN: UNDUH PDF
+// FUNGSI UNDUH PDF
 function downloadPDF() {
-    // Cek apakah library html2pdf sudah terload
     if (typeof html2pdf === 'undefined') {
-        alert('Sistem pengunduhan PDF belum siap. Silakan refresh halaman dan coba lagi.');
+        alert('Sistem PDF belum siap. Silakan refresh halaman.');
         return;
     }
 
     const element = document.getElementById('pdfArea');
-    if (!element) {
-        alert('Area tabel tidak ditemukan.');
-        return;
-    }
+    if (!element) return;
 
     const btn = document.querySelector('.btn-pdf');
     if (btn) btn.textContent = 'Memproses PDF...';
 
-    // Konfigurasi opsi PDF
     const opt = {
         margin:       [10, 10, 10, 10],
         filename:     `Nota_Pengiriman_${new Date().toISOString().slice(0,10)}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, logging: false },
+        html2canvas:  { scale: 2 },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    // Jalankan konversi PDF
     html2pdf().set(opt).from(element).save().then(() => {
         if (btn) btn.textContent = '📄 Unduh PDF Nota';
     }).catch(err => {
-        console.error('Error saat membuat PDF:', err);
-        alert('Gagal mengunduh PDF: ' + err.message);
+        console.error('Error PDF:', err);
+        alert('Gagal mengunduh PDF.');
         if (btn) btn.textContent = '📄 Unduh PDF Nota';
     });
 }
