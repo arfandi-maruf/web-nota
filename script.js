@@ -1,5 +1,5 @@
 // URL Web App dari Google Apps Script Anda
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTzHJ8Bf_D2y3ZUA-Rwt-uyUBsabdfAttanGCI6aA-qZNhkU03IfocgiqMDAORgc1V/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw83KxTJy0lcg8Pw-PcoKyqw5-B2m_9U49UDFFZbVwJDc7t6uRmP446xWb362LRn6y5qA/exec";
 
 // Format angka ke Rupiah
 function formatRupiah(number) {
@@ -23,11 +23,14 @@ document.addEventListener('DOMContentLoaded', () => {
         hargaInput.addEventListener('input', calculatePreview);
     }
 
-    // Ambil data awal dari Google Sheets
-    loadDataFromGoogleSheets();
+    // Bersihkan isi tabel saat awal dibuka
+    const tableBody = document.getElementById('tableBody');
+    if (tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Belum ada data. Silakan isi form di atas.</td></tr>';
+    }
 });
 
-// Kirim data baru ke Google Sheets
+// Kirim data baru ke Google Sheets & Tambahkan Langsung ke Tabel
 const entryForm = document.getElementById('entryForm');
 if (entryForm) {
     entryForm.addEventListener('submit', function(e) {
@@ -44,7 +47,7 @@ if (entryForm) {
         const harga = parseFloat(document.getElementById('harga').value) || 0;
         const total = drum * harga;
 
-        // 1. TAMBAHKAN LANGSUNG KE TABEL DI LAYAR (LOKAL)
+        // 1. TAMBAHKAN BARIS SECARA LANGSUNG KE TABEL DI LAYAR
         const tableBody = document.getElementById('tableBody');
         if (tableBody.innerHTML.includes('Belum ada data') || tableBody.innerHTML.includes('Gagal memuat')) {
             tableBody.innerHTML = '';
@@ -63,7 +66,7 @@ if (entryForm) {
         tableBody.appendChild(newRow);
         calculateGrandTotal();
 
-        // 2. KIRIM KE GOOGLE SHEETS
+        // 2. KIRIM DATA KE GOOGLE SHEETS
         const payload = {
             tanggal: tanggal,
             supir: supir,
@@ -82,7 +85,7 @@ if (entryForm) {
             body: JSON.stringify(payload)
         })
         .then(() => {
-            alert('Data berhasil disimpan!');
+            alert('Data berhasil ditambahkan dan tersimpan ke Google Sheets!');
             this.reset();
             document.getElementById('totalPreview').value = 'Rp 0';
             submitBtn.disabled = false;
@@ -90,60 +93,14 @@ if (entryForm) {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Gagal mengirim ke Google Sheets, tapi data sudah masuk tabel sementara.');
+            alert('Data tampil di tabel, namun gagal terhubung ke Google Sheets.');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Tambah ke Tabel';
         });
     });
 }
 
-// Fungsi untuk mengambil data dari Google Sheets
-function loadDataFromGoogleSheets() {
-    const tableBody = document.getElementById('tableBody');
-    if (!tableBody) return;
-
-    fetch(SCRIPT_URL)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Jaringan bermasalah');
-            }
-            return response.json();
-        })
-        .then(data => {
-            tableBody.innerHTML = '';
-            
-            if (!data || data.length <= 1) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Belum ada data tersimpan.</td></tr>';
-                calculateGrandTotal();
-                return;
-            }
-
-            for (let i = 1; i < data.length; i++) {
-                const row = data[i];
-                const newRow = document.createElement('tr');
-                newRow.innerHTML = `
-                    <td><input type="text" class="cell-input" value="${row[0] || ''}"></td>
-                    <td><input type="text" class="cell-input" value="${row[1] || ''}"></td>
-                    <td><input type="text" class="cell-input" value="${row[2] || ''}"></td>
-                    <td><input type="number" class="cell-input cell-number cell-drum" value="${row[3] || 0}" oninput="updateRowTotal(this)"></td>
-                    <td><input type="number" class="cell-input cell-number cell-harga" value="${row[4] || 0}" oninput="updateRowTotal(this)"></td>
-                    <td class="cell-total">${formatRupiah(row[5] || 0)}</td>
-                    <td class="cell-action no-print"><button class="btn-delete" onclick="deleteRow(this)">✕</button></td>
-                `;
-                tableBody.appendChild(newRow);
-            }
-            calculateGrandTotal();
-        })
-        .catch(err => {
-            console.error('Gagal memuat data:', err);
-            // Jangan menimpa isi tabel jika sebelumnya sudah ada data
-            if (tableBody.children.length === 0 || tableBody.innerHTML.includes('Memuat data')) {
-                tableBody.innerHTML = '<tr><td colspan="7" class="text-center" style="color: red;">Gagal memuat data dari server. Silakan refresh halaman.</td></tr>';
-            }
-        });
-}
-
-// Update total baris ketika input di dalam tabel diubah langsung
+// Update total baris ketika input di dalam tabel diubah
 function updateRowTotal(element) {
     const row = element.closest('tr');
     const drumVal = parseFloat(row.querySelector('.cell-drum').value) || 0;
@@ -159,7 +116,6 @@ function addNewRow() {
     const tableBody = document.getElementById('tableBody');
     if (!tableBody) return;
 
-    // Hilangkan pesan kosong/loading jika ada
     if (tableBody.innerHTML.includes('Belum ada data') || tableBody.innerHTML.includes('Gagal memuat')) {
         tableBody.innerHTML = '';
     }
@@ -191,6 +147,7 @@ function calculateGrandTotal() {
     const rows = document.querySelectorAll('#tableBody tr');
     let totalDrum = 0;
     let totalHarga = 0;
+    let validRowsCount = 0;
 
     rows.forEach(row => {
         const drumInput = row.querySelector('.cell-drum');
@@ -201,6 +158,7 @@ function calculateGrandTotal() {
             const hargaVal = parseFloat(hargaInput.value) || 0;
             totalDrum += drumVal;
             totalHarga += (drumVal * hargaVal);
+            validRowsCount++;
         }
     });
 
@@ -210,7 +168,7 @@ function calculateGrandTotal() {
 
     if (drumElem) drumElem.textContent = totalDrum.toLocaleString('id-ID');
     if (hargaElem) hargaElem.textContent = formatRupiah(totalHarga);
-    if (countElem) countElem.textContent = `${rows.length} Data`;
+    if (countElem) countElem.textContent = `${validRowsCount} Data`;
 }
 
 // FUNGSI UNDUH PDF
