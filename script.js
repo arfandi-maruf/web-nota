@@ -1,12 +1,12 @@
-// Ganti URL di bawah ini dengan URL Web App dari Google Apps Script Anda
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw8JKxTJyOlcg8Pw-PcoKyqw5-B2m_9U49UDfFZbVwJDc7t6uRmP446xWb362LRn6y5qA/exec";
+// URL Web App dari Google Apps Script Anda
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw83KxTJy0lcg8Pw-PcoKyqw5-B2m_9U49UDFFZbVwJDc7t6uRmP446xWb362LRn6y5qA/exec";
 
 // Format angka ke Rupiah
 function formatRupiah(number) {
     return 'Rp ' + Number(number).toLocaleString('id-ID');
 }
 
-// Ambil data otomatis dari Google Sheets saat halaman web dibuka
+// Inisialisasi awal saat halaman web dibuka
 document.addEventListener('DOMContentLoaded', () => {
     const drumInput = document.getElementById('drum');
     const hargaInput = document.getElementById('harga');
@@ -21,11 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
     drumInput.addEventListener('input', calculatePreview);
     hargaInput.addEventListener('input', calculatePreview);
 
-    // Load data lama dari Google Sheets
+    // Ambil data dari Google Sheets
     loadDataFromGoogleSheets();
 });
 
-// Fungsi untuk mengirim data baru ke Google Sheets
+// Kirim data baru ke Google Sheets
 document.getElementById('entryForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -49,7 +49,6 @@ document.getElementById('entryForm').addEventListener('submit', function(e) {
         total: total
     };
 
-    // Kirim data ke Google Sheets
     fetch(SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
@@ -64,7 +63,6 @@ document.getElementById('entryForm').addEventListener('submit', function(e) {
         document.getElementById('totalPreview').value = 'Rp 0';
         submitBtn.disabled = false;
         submitBtn.textContent = 'Tambah ke Tabel';
-        // Reload tabel
         loadDataFromGoogleSheets();
     })
     .catch(error => {
@@ -75,7 +73,7 @@ document.getElementById('entryForm').addEventListener('submit', function(e) {
     });
 });
 
-// Fungsi untuk mengambil dan menampilkan data dari Google Sheets
+// Fungsi untuk mengambil data dari Google Sheets
 function loadDataFromGoogleSheets() {
     const tableBody = document.getElementById('tableBody');
     tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Memuat data dari Google Sheets...</td></tr>';
@@ -85,7 +83,6 @@ function loadDataFromGoogleSheets() {
         .then(data => {
             tableBody.innerHTML = '';
             
-            // Lewati baris 0 (karena baris 0 adalah Header: Tanggal, Supir, dll)
             if (data.length <= 1) {
                 tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Belum ada data tersimpan.</td></tr>';
                 calculateGrandTotal();
@@ -99,10 +96,10 @@ function loadDataFromGoogleSheets() {
                     <td><input type="text" class="cell-input" value="${row[0] || ''}"></td>
                     <td><input type="text" class="cell-input" value="${row[1] || ''}"></td>
                     <td><input type="text" class="cell-input" value="${row[2] || ''}"></td>
-                    <td><input type="number" class="cell-input cell-number cell-drum" value="${row[3] || 0}"></td>
-                    <td><input type="number" class="cell-input cell-number cell-harga" value="${row[4] || 0}"></td>
+                    <td><input type="number" class="cell-input cell-number cell-drum" value="${row[3] || 0}" oninput="updateRowTotal(this)"></td>
+                    <td><input type="number" class="cell-input cell-number cell-harga" value="${row[4] || 0}" oninput="updateRowTotal(this)"></td>
                     <td class="cell-total">${formatRupiah(row[5] || 0)}</td>
-                    <td class="cell-action">-</td>
+                    <td class="cell-action no-print"><button class="btn-delete" onclick="deleteRow(this)">✕</button></td>
                 `;
                 tableBody.appendChild(newRow);
             }
@@ -114,7 +111,44 @@ function loadDataFromGoogleSheets() {
         });
 }
 
-// Hitung Ulang Total Rekapitulasi
+// Update total baris ketika input di dalam tabel diubah langsung
+function updateRowTotal(element) {
+    const row = element.closest('tr');
+    const drumVal = parseFloat(row.querySelector('.cell-drum').value) || 0;
+    const hargaVal = parseFloat(row.querySelector('.cell-harga').value) || 0;
+    const totalCell = row.querySelector('.cell-total');
+
+    totalCell.textContent = formatRupiah(drumVal * hargaVal);
+    calculateGrandTotal();
+}
+
+// Tambah baris kosong baru di tabel
+function addNewRow() {
+    const tableBody = document.getElementById('tableBody');
+    const newRow = document.createElement('tr');
+
+    newRow.innerHTML = `
+        <td><input type="text" class="cell-input" value="" placeholder="Tanggal"></td>
+        <td><input type="text" class="cell-input" value="" placeholder="Supir"></td>
+        <td><input type="text" class="cell-input" value="" placeholder="Mobil"></td>
+        <td><input type="number" class="cell-input cell-number cell-drum" value="" placeholder="0" oninput="updateRowTotal(this)"></td>
+        <td><input type="number" class="cell-input cell-number cell-harga" value="" placeholder="0" oninput="updateRowTotal(this)"></td>
+        <td class="cell-total">Rp 0</td>
+        <td class="cell-action no-print"><button class="btn-delete" onclick="deleteRow(this)">✕</button></td>
+    `;
+
+    tableBody.appendChild(newRow);
+    calculateGrandTotal();
+}
+
+// Hapus baris dari tabel
+function deleteRow(button) {
+    const row = button.closest('tr');
+    row.remove();
+    calculateGrandTotal();
+}
+
+// Hitung Ulang Total Rekapitulasi (Drum & Total Harga)
 function calculateGrandTotal() {
     const rows = document.querySelectorAll('#tableBody tr');
     let totalDrum = 0;
@@ -135,4 +169,29 @@ function calculateGrandTotal() {
     document.getElementById('grandTotalDrum').textContent = totalDrum.toLocaleString('id-ID');
     document.getElementById('grandTotalHarga').textContent = formatRupiah(totalHarga);
     document.getElementById('rowCount').textContent = `${rows.length} Data`;
+}
+
+// FUNGSI UTAMA: MENGUNDUH REKAP MENJADI FILE PDF
+function downloadPDF() {
+    const element = document.getElementById('pdfArea');
+    const noPrintElements = element.querySelectorAll('.no-print');
+    const titlePrint = element.querySelector('.pdf-title-print');
+
+    // Sembunyikan kolom aksi sementara agar PDF rapi
+    noPrintElements.forEach(el => el.style.display = 'none');
+    if (titlePrint) titlePrint.style.display = 'block';
+
+    const opt = {
+        margin:       [10, 10, 10, 10],
+        filename:     `Nota_Pengiriman_${new Date().toISOString().slice(0,10)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        // Kembalikan tampilan semula setelah PDF selesai diunduh
+        noPrintElements.forEach(el => el.style.display = '');
+        if (titlePrint) titlePrint.style.display = 'none';
+    });
 }
