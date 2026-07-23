@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Input Data Pengiriman</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="gaya.css">
+    <!-- Pustaka untuk Cetak / Unduh PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -54,9 +56,15 @@
         <section class="table-card">
             <div class="table-header-bar">
                 <h3>Tabel Rekapitulasi Data</h3>
-                <span class="badge" id="rowCount">1 Data</span>
+                <span class="badge" id="rowCount">0 Data</span>
             </div>
-            <div class="table-responsive">
+            
+            <!-- Container khusus yang akan dijadikan PDF -->
+            <div class="table-responsive" id="pdfArea">
+                <div class="pdf-title-print">
+                    <h2>REKAPITULASI DATA PENGIRIMAN</h2>
+                    <hr style="margin-bottom: 12px; border: 1px solid #107c41;">
+                </div>
                 <table id="dataTable">
                     <thead>
                         <tr>
@@ -66,19 +74,12 @@
                             <th style="width: 12%;">Drum</th>
                             <th style="width: 15%;">Harga</th>
                             <th style="width: 15%;">Total</th>
-                            <th style="width: 80px;">Aksi</th>
+                            <th class="no-print" style="width: 80px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <!-- Baris awal seperti di screenshot -->
                         <tr>
-                            <td><input type="text" class="cell-input" value="Jumat,24/07/26" onchange="calculateGrandTotal()"></td>
-                            <td><input type="text" class="cell-input" value="" placeholder="Supir" onchange="calculateGrandTotal()"></td>
-                            <td><input type="text" class="cell-input" value="" placeholder="Mobil" onchange="calculateGrandTotal()"></td>
-                            <td><input type="number" class="cell-input cell-number cell-drum" value="" placeholder="0" oninput="updateRowTotal(this)"></td>
-                            <td><input type="number" class="cell-input cell-number cell-harga" value="" placeholder="0" oninput="updateRowTotal(this)"></td>
-                            <td class="cell-total">Rp 0</td>
-                            <td class="cell-action"><button class="btn-delete" onclick="deleteRow(this)">✕</button></td>
+                            <td colspan="7" class="text-center">Memuat data dari Google Sheets...</td>
                         </tr>
                     </tbody>
                     <tfoot>
@@ -87,13 +88,16 @@
                             <td id="grandTotalDrum" class="text-right"><strong>0</strong></td>
                             <td class="text-right">-</td>
                             <td id="grandTotalHarga" class="text-right"><strong>Rp 0</strong></td>
-                            <td></td>
+                            <td class="no-print"></td>
                         </tr>
                     </tfoot>
                 </table>
             </div>
+
+            <!-- Tombol Tambah & Unduh PDF -->
             <div class="table-actions">
                 <button class="btn btn-outline" onclick="addNewRow()">+ Tambah Baris Kosong</button>
+                <button class="btn btn-pdf" onclick="downloadPDF()">📄 Unduh PDF Nota</button>
             </div>
         </section>
     </div>
