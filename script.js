@@ -18,64 +18,71 @@ document.addEventListener('DOMContentLoaded', () => {
         totalPreview.value = formatRupiah(drum * harga);
     }
 
-    drumInput.addEventListener('input', calculatePreview);
-    hargaInput.addEventListener('input', calculatePreview);
+    if (drumInput && hargaInput) {
+        drumInput.addEventListener('input', calculatePreview);
+        hargaInput.addEventListener('input', calculatePreview);
+    }
 
     // Ambil data dari Google Sheets
     loadDataFromGoogleSheets();
 });
 
 // Kirim data baru ke Google Sheets
-document.getElementById('entryForm').addEventListener('submit', function(e) {
-    e.preventDefault();
+const entryForm = document.getElementById('entryForm');
+if (entryForm) {
+    entryForm.addEventListener('submit', function(e) {
+        e.preventDefault();
 
-    const submitBtn = this.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Menyimpan...';
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Menyimpan...';
 
-    const tanggal = document.getElementById('tanggal').value;
-    const supir = document.getElementById('supir').value;
-    const mobil = document.getElementById('mobil').value;
-    const drum = parseFloat(document.getElementById('drum').value) || 0;
-    const harga = parseFloat(document.getElementById('harga').value) || 0;
-    const total = drum * harga;
+        const tanggal = document.getElementById('tanggal').value;
+        const supir = document.getElementById('supir').value;
+        const mobil = document.getElementById('mobil').value;
+        const drum = parseFloat(document.getElementById('drum').value) || 0;
+        const harga = parseFloat(document.getElementById('harga').value) || 0;
+        const total = drum * harga;
 
-    const payload = {
-        tanggal: tanggal,
-        supir: supir,
-        mobil: mobil,
-        drum: drum,
-        harga: harga,
-        total: total
-    };
+        const payload = {
+            tanggal: tanggal,
+            supir: supir,
+            mobil: mobil,
+            drum: drum,
+            harga: harga,
+            total: total
+        };
 
-    fetch(SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    })
-    .then(() => {
-        alert('Data berhasil tersimpan ke Google Sheets!');
-        this.reset();
-        document.getElementById('totalPreview').value = 'Rp 0';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Tambah ke Tabel';
-        loadDataFromGoogleSheets();
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Gagal menyimpan data.');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Tambah ke Tabel';
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            alert('Data berhasil tersimpan ke Google Sheets!');
+            this.reset();
+            document.getElementById('totalPreview').value = 'Rp 0';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Tambah ke Tabel';
+            loadDataFromGoogleSheets();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Gagal menyimpan data.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Tambah ke Tabel';
+        });
     });
-});
+}
 
 // Fungsi untuk mengambil data dari Google Sheets
 function loadDataFromGoogleSheets() {
     const tableBody = document.getElementById('tableBody');
+    if (!tableBody) return;
+
     tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Memuat data dari Google Sheets...</td></tr>';
 
     fetch(SCRIPT_URL)
@@ -83,7 +90,7 @@ function loadDataFromGoogleSheets() {
         .then(data => {
             tableBody.innerHTML = '';
             
-            if (data.length <= 1) {
+            if (!data || data.length <= 1) {
                 tableBody.innerHTML = '<tr><td colspan="7" class="text-center">Belum ada data tersimpan.</td></tr>';
                 calculateGrandTotal();
                 return;
@@ -125,8 +132,9 @@ function updateRowTotal(element) {
 // Tambah baris kosong baru di tabel
 function addNewRow() {
     const tableBody = document.getElementById('tableBody');
-    const newRow = document.createElement('tr');
+    if (!tableBody) return;
 
+    const newRow = document.createElement('tr');
     newRow.innerHTML = `
         <td><input type="text" class="cell-input" value="" placeholder="Tanggal"></td>
         <td><input type="text" class="cell-input" value="" placeholder="Supir"></td>
@@ -166,32 +174,47 @@ function calculateGrandTotal() {
         }
     });
 
-    document.getElementById('grandTotalDrum').textContent = totalDrum.toLocaleString('id-ID');
-    document.getElementById('grandTotalHarga').textContent = formatRupiah(totalHarga);
-    document.getElementById('rowCount').textContent = `${rows.length} Data`;
+    const drumElem = document.getElementById('grandTotalDrum');
+    const hargaElem = document.getElementById('grandTotalHarga');
+    const countElem = document.getElementById('rowCount');
+
+    if (drumElem) drumElem.textContent = totalDrum.toLocaleString('id-ID');
+    if (hargaElem) hargaElem.textContent = formatRupiah(totalHarga);
+    if (countElem) countElem.textContent = `${rows.length} Data`;
 }
 
-// FUNGSI UTAMA: MENGUNDUH REKAP MENJADI FILE PDF
+// FUNGSI PERBAIKAN: UNDUH PDF
 function downloadPDF() {
+    // Cek apakah library html2pdf sudah terload
+    if (typeof html2pdf === 'undefined') {
+        alert('Sistem pengunduhan PDF belum siap. Silakan refresh halaman dan coba lagi.');
+        return;
+    }
+
     const element = document.getElementById('pdfArea');
-    const noPrintElements = element.querySelectorAll('.no-print');
-    const titlePrint = element.querySelector('.pdf-title-print');
+    if (!element) {
+        alert('Area tabel tidak ditemukan.');
+        return;
+    }
 
-    // Sembunyikan kolom aksi sementara agar PDF rapi
-    noPrintElements.forEach(el => el.style.display = 'none');
-    if (titlePrint) titlePrint.style.display = 'block';
+    const btn = document.querySelector('.btn-pdf');
+    if (btn) btn.textContent = 'Memproses PDF...';
 
+    // Konfigurasi opsi PDF
     const opt = {
         margin:       [10, 10, 10, 10],
         filename:     `Nota_Pengiriman_${new Date().toISOString().slice(0,10)}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
+        html2canvas:  { scale: 2, logging: false },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
+    // Jalankan konversi PDF
     html2pdf().set(opt).from(element).save().then(() => {
-        // Kembalikan tampilan semula setelah PDF selesai diunduh
-        noPrintElements.forEach(el => el.style.display = '');
-        if (titlePrint) titlePrint.style.display = 'none';
+        if (btn) btn.textContent = '📄 Unduh PDF Nota';
+    }).catch(err => {
+        console.error('Error saat membuat PDF:', err);
+        alert('Gagal mengunduh PDF: ' + err.message);
+        if (btn) btn.textContent = '📄 Unduh PDF Nota';
     });
 }
