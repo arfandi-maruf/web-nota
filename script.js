@@ -44,6 +44,26 @@ if (entryForm) {
         const harga = parseFloat(document.getElementById('harga').value) || 0;
         const total = drum * harga;
 
+        // 1. TAMBAHKAN LANGSUNG KE TABEL DI LAYAR (LOKAL)
+        const tableBody = document.getElementById('tableBody');
+        if (tableBody.innerHTML.includes('Belum ada data') || tableBody.innerHTML.includes('Gagal memuat')) {
+            tableBody.innerHTML = '';
+        }
+
+        const newRow = document.createElement('tr');
+        newRow.innerHTML = `
+            <td><input type="text" class="cell-input" value="${tanggal}"></td>
+            <td><input type="text" class="cell-input" value="${supir}"></td>
+            <td><input type="text" class="cell-input" value="${mobil}"></td>
+            <td><input type="number" class="cell-input cell-number cell-drum" value="${drum}" oninput="updateRowTotal(this)"></td>
+            <td><input type="number" class="cell-input cell-number cell-harga" value="${harga}" oninput="updateRowTotal(this)"></td>
+            <td class="cell-total">${formatRupiah(total)}</td>
+            <td class="cell-action no-print"><button class="btn-delete" onclick="deleteRow(this)">✕</button></td>
+        `;
+        tableBody.appendChild(newRow);
+        calculateGrandTotal();
+
+        // 2. KIRIM KE GOOGLE SHEETS
         const payload = {
             tanggal: tanggal,
             supir: supir,
@@ -62,20 +82,15 @@ if (entryForm) {
             body: JSON.stringify(payload)
         })
         .then(() => {
-            alert('Data berhasil tersimpan ke Google Sheets!');
+            alert('Data berhasil disimpan!');
             this.reset();
             document.getElementById('totalPreview').value = 'Rp 0';
             submitBtn.disabled = false;
             submitBtn.textContent = 'Tambah ke Tabel';
-
-            // Beri jeda 1,5 detik sebelum reload tabel agar Google Sheets selesai menulis data
-            setTimeout(() => {
-                loadDataFromGoogleSheets();
-            }, 1500);
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Gagal menyimpan data.');
+            alert('Gagal mengirim ke Google Sheets, tapi data sudah masuk tabel sementara.');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Tambah ke Tabel';
         });
