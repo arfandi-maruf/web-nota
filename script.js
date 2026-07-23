@@ -1,177 +1,110 @@
-// -------------------- Firebase Setup --------------------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyAFrTl69PSRMptdzpenzJufCJ2E70D0L54",
-    authDomain: "notapengeluaranapp.firebaseapp.com",
-    projectId: "notapengeluaranapp",
-    storageBucket: "notapengeluaranapp.firebasestorage.app",
-    messagingSenderId: "667913212428",
-    appId: "1:667913212428:web:1cf5b4c1d7f82ec52d5429",
-    measurementId: "G-NP9R7815PK",
-    databaseURL: "https://notapengeluaranapp-default-rtdb.firebaseio.com/"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-
-// -------------------- Helper Format Rupiah --------------------
-function formatRupiah(num) {
-    return "Rp " + Number(num).toLocaleString("id-ID");
+// Format angka ke Rupiah
+function formatRupiah(number) {
+    return 'Rp ' + Number(number).toLocaleString('id-ID');
 }
 
+// Inisialisasi perhitungan form atas saat diketik
+document.addEventListener('DOMContentLoaded', () => {
+    const drumInput = document.getElementById('drum');
+    const hargaInput = document.getElementById('harga');
+    const totalPreview = document.getElementById('totalPreview');
 
-// -------------------- NAV --------------------
-window.showPage = function(pg) {
-    document.getElementById("gaji").style.display = "none";
-    document.getElementById("pengeluaran").style.display = "none";
-    document.getElementById(pg).style.display = "block";
-};
+    function calculatePreview() {
+        const drum = parseFloat(drumInput.value) || 0;
+        const harga = parseFloat(hargaInput.value) || 0;
+        totalPreview.value = formatRupiah(drum * harga);
+    }
 
+    drumInput.addEventListener('input', calculatePreview);
+    hargaInput.addEventListener('input', calculatePreview);
 
-// -------------------- GAJI --------------------
-window.tambahGaji = function() {
-    let nama = gajiNama.value;
-    let jumlah = gajiJumlah.value;
-    if (!nama || !jumlah) return;
-
-    push(ref(db, "gaji"), { nama, jumlah: Number(jumlah) });
-
-    gajiNama.value = "";
-    gajiJumlah.value = "";
-};
-
-// Load Gaji
-onValue(ref(db, "gaji"), snap => {
-    let tbody = document.getElementById("gajiTable");
-    tbody.innerHTML = "";
-    if (!snap.val()) return;
-
-    Object.entries(snap.val()).forEach(([id, item]) => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${item.nama}</td>
-                <td>${formatRupiah(item.jumlah)}</td>
-                <td>
-                    <button onclick="hapusGaji('${id}')">Hapus</button>
-                </td>
-            </tr>
-        `;
-    });
+    calculateGrandTotal();
 });
 
-window.hapusGaji = function(id) {
-    remove(ref(db, "gaji/" + id));
-};
+// Tambah data dari form atas ke tabel
+document.getElementById('entryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
 
+    const tanggal = document.getElementById('tanggal').value;
+    const supir = document.getElementById('supir').value;
+    const mobil = document.getElementById('mobil').value;
+    const drum = parseFloat(document.getElementById('drum').value) || 0;
+    const harga = parseFloat(document.getElementById('harga').value) || 0;
 
-// -------------------- PENGELUARAN --------------------
-window.tambahPengeluaran = function() {
-    let tgl = pengTanggal.value;
-    let nama = pengNama.value;
-    let qty = pengQty.value;
-    let harga = pengHarga.value;
+    const tableBody = document.getElementById('tableBody');
+    const newRow = document.createElement('tr');
 
-    if (!tgl || !nama || !qty || !harga) return;
+    newRow.innerHTML = `
+        <td><input type="text" class="cell-input" value="${tanggal}" onchange="calculateGrandTotal()"></td>
+        <td><input type="text" class="cell-input" value="${supir}" onchange="calculateGrandTotal()"></td>
+        <td><input type="text" class="cell-input" value="${mobil}" onchange="calculateGrandTotal()"></td>
+        <td><input type="number" class="cell-input cell-number cell-drum" value="${drum}" oninput="updateRowTotal(this)"></td>
+        <td><input type="number" class="cell-input cell-number cell-harga" value="${harga}" oninput="updateRowTotal(this)"></td>
+        <td class="cell-total">${formatRupiah(drum * harga)}</td>
+        <td class="cell-action"><button class="btn-delete" onclick="deleteRow(this)">✕</button></td>
+    `;
 
-    // ambil angka pertama dari "qty" (misal: "10 kg" → 10)
-    let qtyNum = parseFloat(qty);
+    tableBody.appendChild(newRow);
 
-    push(ref(db, "pengeluaran"), {
-        tgl,
-        nama,
-        qty,        // simpan teks utuh
-        harga: Number(harga),
-        total: qtyNum * Number(harga)
-    });
+    this.reset();
+    document.getElementById('totalPreview').value = 'Rp 0';
 
-    pengNama.value = "";
-    pengQty.value = "";
-    pengHarga.value = "";
-};
-
-
-// Load & Group Pengeluaran
-onValue(ref(db, "pengeluaran"), snap => {
-    let data = snap.val();
-    let wrapper = document.getElementById("pengeluaranWrapper");
-    wrapper.innerHTML = "";
-
-    if (!data) return;
-
-    let group = {};
-    Object.entries(data).forEach(([id, item]) => {
-        if (!group[item.tgl]) group[item.tgl] = [];
-        group[item.tgl].push({ id, ...item });
-    });
-
-    let grand = 0;
-
-    Object.keys(group).sort().forEach(tgl => {
-        let subtotal = 0;
-
-        let card = document.createElement("div");
-        card.className = "card";
-
-        card.innerHTML = `
-            <h3>📅 ${tgl}</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nama Barang</th>
-                        <th>Banyaknya</th>
-                        <th>Harga</th>
-                        <th>Total</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody id="body-${tgl}"></tbody>
-            </table>
-            <h4>Subtotal: <span id="sub-${tgl}">0</span></h4>
-            <button onclick="exportPerTanggalPDF('${tgl}')">Download PDF Tanggal Ini</button>
-        `;
-
-        wrapper.appendChild(card);
-
-        let tbody = document.getElementById("body-" + tgl);
-
-        group[tgl].forEach(item => {
-            subtotal += item.total;
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>${item.nama}</td>
-                    <td>${item.qty}</td>
-                    <td>${formatRupiah(item.harga)}</td>
-                    <td>${formatRupiah(item.total)}</td>
-                    <td>
-                        <button onclick="hapusPeng('${item.id}')">Hapus</button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        document.getElementById("sub-" + tgl).innerText = formatRupiah(subtotal);
-        grand += subtotal;
-    });
-
-    document.getElementById("grandTotalRp").innerText = formatRupiah(grand);
+    calculateGrandTotal();
 });
 
+// Update total baris ketika input Drum atau Harga di dalam tabel diubah langsung
+function updateRowTotal(element) {
+    const row = element.closest('tr');
+    const drumVal = parseFloat(row.querySelector('.cell-drum').value) || 0;
+    const hargaVal = parseFloat(row.querySelector('.cell-harga').value) || 0;
+    const totalCell = row.querySelector('.cell-total');
 
-// Hapus pengeluaran
-window.hapusPeng = function(id) {
-    remove(ref(db, "pengeluaran/" + id));
-};
+    totalCell.textContent = formatRupiah(drumVal * hargaVal);
 
-
-// -------------------- EXPORT PDF --------------------
-window.exportSemuaPDF = function() {
-    window.print();
+    calculateGrandTotal();
 }
 
-window.exportPerTanggalPDF = function(tgl) {
-    alert("Untuk sekarang masih memakai print seleksi. Jika mau aku buatkan generator PDF khusus yang rapi.");
+// Tambah baris kosong langsung di tabel
+function addNewRow() {
+    const tableBody = document.getElementById('tableBody');
+    const newRow = document.createElement('tr');
+
+    newRow.innerHTML = `
+        <td><input type="text" class="cell-input" value="" placeholder="Tanggal" onchange="calculateGrandTotal()"></td>
+        <td><input type="text" class="cell-input" value="" placeholder="Supir" onchange="calculateGrandTotal()"></td>
+        <td><input type="text" class="cell-input" value="" placeholder="Mobil" onchange="calculateGrandTotal()"></td>
+        <td><input type="number" class="cell-input cell-number cell-drum" value="" placeholder="0" oninput="updateRowTotal(this)"></td>
+        <td><input type="number" class="cell-input cell-number cell-harga" value="" placeholder="0" oninput="updateRowTotal(this)"></td>
+        <td class="cell-total">Rp 0</td>
+        <td class="cell-action"><button class="btn-delete" onclick="deleteRow(this)">✕</button></td>
+    `;
+
+    tableBody.appendChild(newRow);
+    calculateGrandTotal();
+}
+
+// Hapus baris dari tabel
+function deleteRow(button) {
+    const row = button.closest('tr');
+    row.remove();
+    calculateGrandTotal();
+}
+
+// Hitung ulang Total Keseluruhan (Total Drum & Total Harga)
+function calculateGrandTotal() {
+    const rows = document.querySelectorAll('#tableBody tr');
+    let totalDrum = 0;
+    let totalHarga = 0;
+
+    rows.forEach(row => {
+        const drumVal = parseFloat(row.querySelector('.cell-drum').value) || 0;
+        const hargaVal = parseFloat(row.querySelector('.cell-harga').value) || 0;
+
+        totalDrum += drumVal;
+        totalHarga += (drumVal * hargaVal);
+    });
+
+    document.getElementById('grandTotalDrum').textContent = totalDrum.toLocaleString('id-ID');
+    document.getElementById('grandTotalHarga').textContent = formatRupiah(totalHarga);
+    document.getElementById('rowCount').textContent = `${rows.length} Data`;
 }
