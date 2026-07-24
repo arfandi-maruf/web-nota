@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Kirim data baru ke Google Sheets & Tambahkan Langsung ke Tabel
+// Kirim data baru ke Google Sheets & Tambahkan ke Tabel
 const entryForm = document.getElementById('entryForm');
 if (entryForm) {
     entryForm.addEventListener('submit', function(e) {
@@ -47,7 +47,7 @@ if (entryForm) {
         const harga = parseFloat(document.getElementById('harga').value) || 0;
         const total = drum * harga;
 
-        // 1. TAMBAHKAN BARIS SECARA LANGSUNG KE TABEL DI LAYAR
+        // 1. TAMBAHKAN LANGSUNG KE TABEL DI LAYAR
         const tableBody = document.getElementById('tableBody');
         if (tableBody.innerHTML.includes('Belum ada data') || tableBody.innerHTML.includes('Gagal memuat')) {
             tableBody.innerHTML = '';
@@ -66,26 +66,25 @@ if (entryForm) {
         tableBody.appendChild(newRow);
         calculateGrandTotal();
 
-        // 2. KIRIM DATA KE GOOGLE SHEETS
-       const payload = {
-    tanggal: tanggal,
-    supir: supir,
-    mobil: mobil,
-    drum: drum,
-    harga: harga,
-    total: total
-};
+        // 2. KIRIM KE GOOGLE SHEETS DENGAN FORM DATA (BEBAS HANDSHAKE CORS)
+        const formData = new URLSearchParams();
+        formData.append('tanggal', tanggal);
+        formData.append('supir', supir);
+        formData.append('mobil', mobil);
+        formData.append('drum', drum);
+        formData.append('harga', harga);
+        formData.append('total', total);
 
-fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-})
+        fetch(SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData.toString()
+        })
         .then(() => {
-            alert('Data berhasil ditambahkan dan tersimpan ke Google Sheets!');
+            alert('Data berhasil dikirim dan tersimpan di Google Sheets!');
             this.reset();
             document.getElementById('totalPreview').value = 'Rp 0';
             submitBtn.disabled = false;
@@ -93,13 +92,12 @@ fetch(SCRIPT_URL, {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Data tampil di tabel, namun gagal terhubung ke Google Sheets.');
+            alert('Gagal mengirim ke server.');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Tambah ke Tabel';
         });
     });
 }
-
 // Update total baris ketika input di dalam tabel diubah
 function updateRowTotal(element) {
     const row = element.closest('tr');
