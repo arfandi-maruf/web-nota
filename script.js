@@ -67,23 +67,23 @@ if (entryForm) {
         calculateGrandTotal();
 
         // 2. KIRIM DATA KE GOOGLE SHEETS
-        const payload = {
-            tanggal: tanggal,
-            supir: supir,
-            mobil: mobil,
-            drum: drum,
-            harga: harga,
-            total: total
-        };
+       const payload = {
+    tanggal: tanggal,
+    supir: supir,
+    mobil: mobil,
+    drum: drum,
+    harga: harga,
+    total: total
+};
 
-        fetch(SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        })
+fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+})
         .then(() => {
             alert('Data berhasil ditambahkan dan tersimpan ke Google Sheets!');
             this.reset();
