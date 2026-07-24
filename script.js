@@ -1,5 +1,5 @@
 // URL Web App dari Google Apps Script Anda
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby326K5EOFsm48lHj0VGfI-f1DdDGYifu9W-_Bfvl8MpoINQnmxRCVK0Bo3-vHVu3mA/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0YmE9q6Y3FX7toiAW8Baqu48kxRzyjT_akhhM_3cDlBnpAdg5TNjbs6KV0ckip8x_qw/exec";
 
 // Format angka ke Rupiah
 function formatRupiah(number) {
